@@ -7,7 +7,7 @@ import com.gebeya.bankAPI.Model.Entities.Account;
 public interface AccountService {
     public ResponseModel addAccount(Account Account);
 
-    public OperationResult<String> checkBalance(long accountNo);
+    public ResponseModel checkBalance(long accountNo);
 
     public ResponseModel transfer(TransferDTO transferDTO);
 

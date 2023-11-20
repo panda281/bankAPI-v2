@@ -15,11 +15,7 @@ public interface TransactionService {
 //    public Transaction updateTransaction(Transaction transaction);
 //    @Scheduled(fixedRate = 60000)
     public void autoCheckOTPExpiration();
+    public Transaction addTransaction(Transaction transaction);
 
-    public Transaction depositForDefaultCustomer(TransactionRequestDTO transaction);
-    public Transaction withdrawForDefaultCustomer(TransactionRequestDTO transaction);
-    public Transaction depositForMerchantCustomer(MerchantDTO transaction);
-    public Transaction transfer(TransferDTO transferDTO);
-    public Transaction withdrawalForMerchantCustomer(MerchantDTO transaction);
     public List<ShortStatementDTO> shortStatement(long accountNo);
 }

@@ -3,6 +3,7 @@ package com.gebeya.bankAPI.Controller;
 
 import com.gebeya.bankAPI.Model.DTO.*;
 import com.gebeya.bankAPI.Model.Entities.Account;
+import com.gebeya.bankAPI.Repository.HistoryRepository;
 import com.gebeya.bankAPI.Service.AccountService;
 import com.gebeya.bankAPI.Service.MobileBankingUserService;
 import com.gebeya.bankAPI.Service.TransactionService;
@@ -21,6 +22,10 @@ import java.util.Locale;
 @Slf4j
 @RequestMapping("/api/v2")
 public class AccountController {
+
+
+    @Autowired
+    HistoryRepository historyRepository;
 
     AccountService accountService;
     TransactionService transactionService;
@@ -144,5 +149,11 @@ public class AccountController {
         TopUpResponseDTO topup = accountService.topUp(top);
         return ResponseEntity.ok(topup);
     }
+
+//    @GetMapping("/test/{id}")
+//    public ResponseEntity<?> test (@PathVariable("id") int id)
+//    {
+//        return ResponseEntity.ok(historyRepository.findByRrn(id));
+//    }
 
 }

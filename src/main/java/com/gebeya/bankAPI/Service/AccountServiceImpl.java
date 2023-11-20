@@ -38,6 +38,8 @@ public class AccountServiceImpl implements AccountService{
 
     WebClient webClientForTopUp;
 
+//    TransactionService transactionService;
+
 
     @Autowired
     public AccountServiceImpl(AccountRepository accountRepository, CustomerRepository customerRepository, TransactionRepository transactionRepository, HistoryRepository historyRepository, WebClient webClientForOtp,WebClient webClientForTopUp)
@@ -45,7 +47,7 @@ public class AccountServiceImpl implements AccountService{
         this.accountRepository=accountRepository;
         this.customerRepository=customerRepository;
         this.transactionRepository=transactionRepository;
-        this.historyRepository=historyRepository;
+        this.historyRepository = historyRepository;
         this.webClientForOtp =webClientForOtp;
         this.webClientForTopUp = webClientForTopUp;
     }
@@ -66,9 +68,7 @@ public class AccountServiceImpl implements AccountService{
         Optional<Account> optionalAccount = accountRepository.findById(accountId);
         if (optionalAccount.isEmpty())
             throw new ErrorMessage(HttpStatus.NOT_FOUND,"Account not found");
-
             Account existingAccount = optionalAccount.get();
-
             existingAccount.setBalance(account.getBalance());
             existingAccount.setAccountStatus(account.getAccountStatus());
             existingAccount.setCustomer(account.getCustomer());
@@ -82,14 +82,15 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
-    public OperationResult<String> checkBalance(long accountNo){
+    public ResponseModel checkBalance(long accountNo){
         if(!accountRepository.existsById(accountNo))
             throw new ErrorMessage(HttpStatus.NOT_FOUND,"invalid AccountNo");
 
         double amount = accountRepository.findById(accountNo).get().getBalance();
         CustomerProfileByAccountDTO  customerProfileByAccountDTO = customerProfileExtractor(accountNo);
-        historyRepository.save(new History(TransactionCode.BalanceInquiry,accountRepository.findById(accountNo).get(),amount,ResponseCode.successful,customerProfileByAccountDTO.getMobileNo()));
-        return new OperationResult<>(true,"the current amount is "+amount,String.valueOf(amount));
+
+        historyRepository.save(new History(customerProfileByAccountDTO.getMobileNo(),ResponseCode.successful,TransactionCode.BalanceInquiry,accountRepository.findById(accountNo).get()));
+        return new ResponseModel(true,"the current amount is "+amount);
     }
 
     @Override
@@ -100,12 +101,27 @@ public class AccountServiceImpl implements AccountService{
 
         Account senderAccount = accountRepository.findById(transferDTO.getSenderAccountNo()).get();
         Account receiverAccount = accountRepository.findById(transferDTO.getReceiverAccountNo()).get();
+        CustomerProfileByAccountDTO  senderMobileNo = customerProfileExtractor(senderAccount.getAccountNo());
+        CustomerProfileByAccountDTO  receiverMobileNo = customerProfileExtractor(receiverAccount.getAccountNo());
+
+        if(transferDTO.getAmount()<=0)
+            throw new ErrorMessage(HttpStatus.BAD_REQUEST,"amount must be greater than 0");
 
         if(senderAccount.getAccountStatus().equals(AccountStatus.Blocked) || receiverAccount.getAccountStatus().equals(AccountStatus.Blocked))
+        {
+            historyRepository.save(new History(TransactionCode.Transfer,senderAccount,SIDE.Debit,transferDTO.getAmount(),ResponseCode.failed,senderMobileNo.getMobileNo()));
+            historyRepository.save(new History(TransactionCode.Transfer,receiverAccount,SIDE.Credit,transferDTO.getAmount(),ResponseCode.failed,receiverMobileNo.getMobileNo()));
             throw new ErrorMessage(HttpStatus.BAD_REQUEST,"Account is blocked");
+        }
+
 
         if(senderAccount.getBalance()<transferDTO.getAmount())
+        {
+            historyRepository.save(new History(TransactionCode.Transfer,senderAccount,SIDE.Debit,transferDTO.getAmount(),ResponseCode.failed,senderMobileNo.getMobileNo()));
+            historyRepository.save(new History(TransactionCode.Transfer,receiverAccount,SIDE.Credit,transferDTO.getAmount(),ResponseCode.failed,receiverMobileNo.getMobileNo()));
             throw new ErrorMessage(HttpStatus.BAD_REQUEST, "Insufficient Balance");
+        }
+
 
         senderAccount.setBalance(senderAccount.getBalance() - transferDTO.getAmount());
         receiverAccount.setBalance(receiverAccount.getBalance() + transferDTO.getAmount());
@@ -113,16 +129,13 @@ public class AccountServiceImpl implements AccountService{
         accountRepository.save(senderAccount);
         accountRepository.save(receiverAccount);
 
-        transactionRepository.save(new Transaction(TransactionCode.Transfer,senderAccount, SIDE.Debit,transferDTO.getAmount(), ResponseCode.successful));
-        transactionRepository.save(new Transaction(TransactionCode.Transfer,receiverAccount,SIDE.Credit,transferDTO.getAmount(),ResponseCode.successful));
+        Transaction sTransaction = transactionRepository.save(new Transaction(TransactionCode.Transfer,senderAccount, SIDE.Debit,transferDTO.getAmount(), ResponseCode.successful));
+        Transaction rTransaction = transactionRepository.save(new Transaction(TransactionCode.Transfer,receiverAccount,SIDE.Credit,transferDTO.getAmount(),ResponseCode.successful));
 
-        CustomerProfileByAccountDTO  senderMobileNo = customerProfileExtractor(senderAccount.getAccountNo());
-        CustomerProfileByAccountDTO  receiverMobileNo = customerProfileExtractor(receiverAccount.getAccountNo());
-
-        History senderHistory = historySaver(TransactionCode.Transfer,senderAccount,SIDE.Debit, senderAccount.getBalance(), ResponseCode.successful,senderMobileNo.getMobileNo());
+        History senderHistory = historySaver(sTransaction,TransactionCode.Transfer,senderAccount,SIDE.Debit, transferDTO.getAmount(), ResponseCode.successful,senderMobileNo.getMobileNo());
         historyRepository.save(senderHistory);
 
-        History receiverHistory = historySaver(TransactionCode.Transfer,receiverAccount,SIDE.Credit, receiverAccount.getBalance(), ResponseCode.successful,receiverMobileNo.getMobileNo());
+        History receiverHistory = historySaver(rTransaction,TransactionCode.Transfer,receiverAccount,SIDE.Credit, transferDTO.getAmount(), ResponseCode.successful,receiverMobileNo.getMobileNo());
         historyRepository.save(receiverHistory);
 
         return new ResponseModel(true,"transfer completed successfully");
@@ -132,9 +145,10 @@ public class AccountServiceImpl implements AccountService{
         return new CustomerProfileByAccountDTO(customerRepository.customerProfileExtractor(accountNo).get());
     }
 
-    public History historySaver(TransactionCode transactionCode, Account account, SIDE side, double amount, ResponseCode responseCode, String mobileNo)
+    public History historySaver(Transaction transaction,TransactionCode transactionCode, Account account, SIDE side, double amount, ResponseCode responseCode, String mobileNo)
     {
         History history = new History();
+        history.setTransaction(transaction);
         history.setTransactionCode(transactionCode);
         history.setAccount(account);
         history.setSide(side);
@@ -171,91 +185,144 @@ public class AccountServiceImpl implements AccountService{
     @Override
     public ResponseModel deposit(TransactionRequestDTOtemp request)
     {
-        if(request.getmAccountNo()==0)
+        if(request.getMerchantUserAccountNo()==0)
         {
 
-            if(!isTheAccountExists(request.getdAccountNo()))
+            if(!isTheAccountExists(request.getDefaultUserAccountNo()))
                 throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer Account can not be found");
 
-            CustomerProfileByAccountDTO customerProfileByAccountDTO = customerProfileExtractor(request.getdAccountNo());
+            CustomerProfileByAccountDTO customerProfileByAccountDTO = customerProfileExtractor(request.getDefaultUserAccountNo());
+            if(request.getAmount()<=0)
+            {
+                historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
+                throw new ErrorMessage(HttpStatus.BAD_REQUEST, "amount must be greater than 0");
+            }
+
             if(customerProfileByAccountDTO.getCustomerProfile()!= CustomerProfile.Default)
+            {
+                historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                 throw new ErrorMessage(HttpStatus.BAD_REQUEST,"bad request");
+            }
+
+
+
 
             //then it is default customer deposit
-            Account account = accountRepository.findById(request.getdAccountNo()).get();
+            Account account = accountRepository.findById(request.getDefaultUserAccountNo()).get();
             Customer customerData = customerRepository.findById(customerProfileByAccountDTO.getCif()).get();
 
             if(customerData.getMobileNo()==null || Objects.equals(customerData.getMobileNo(), ""))
+            {
+                historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed,customerProfileByAccountDTO.getMobileNo()));
                 throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer MobileNo could not be found");
+            }
+
 
             int generatedOtp = otpGenerator();
-            transactionRepository.save(transactionSaverForDepositWithdrawal(TransactionCode.Deposit,account,SIDE.Credit, request.getAmount(), ResponseCode.pending,generatedOtp));
-            otpHandler(generatedOtp,customerData.getMobileNo());
-            historyRepository.save(new History(TransactionCode.Deposit,account,SIDE.Credit,request.getAmount(),ResponseCode.pending,customerProfileByAccountDTO.getMobileNo()));
-            return new ResponseModel(true,"operation completed successfully");
-            //TO-DO historyRepository.save()
-            //TO-DO return ResponseModel
+           Transaction createdTransaction = transactionRepository.save(transactionSaverForDepositWithdrawal(TransactionCode.Deposit,account,SIDE.Credit, request.getAmount(), ResponseCode.pending,generatedOtp));
+//            otpHandler(generatedOtp,customerData.getMobileNo());
+            historyRepository.save(new History(createdTransaction,TransactionCode.Deposit,account,SIDE.Credit, request.getAmount(), ResponseCode.pending,customerProfileByAccountDTO.getMobileNo()));
+            return new ResponseModel(true,"operation completed successfully. Your otp number is "+generatedOtp);
+
         }
         else
         {
-
+        //deposit for merchant
 
             //common
             if(isOtpExpired(request.getOtp()))
+            {
                 throw new ErrorMessage(HttpStatus.BAD_REQUEST, "OTP expired");
+
+            }
+
             //common
-            if(!isTheAccountExists(request.getmAccountNo()))
+            if(!isTheAccountExists(request.getMerchantUserAccountNo()))
                 throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer Account can not be found");
             //common
-            CustomerProfileByAccountDTO McustomerProfileByAccountDTO = customerProfileExtractor(request.getmAccountNo());
+            CustomerProfileByAccountDTO McustomerProfileByAccountDTO = customerProfileExtractor(request.getMerchantUserAccountNo());
             if(McustomerProfileByAccountDTO.getCustomerProfile()!=CustomerProfile.Merchant)
+            {
+                historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                 throw new ErrorMessage(HttpStatus.BAD_REQUEST,"bad request");
+            }
+
             //common
-            Account MerchantAccount = accountRepository.findById(request.getmAccountNo()).get();
+            Account MerchantAccount = accountRepository.findById(request.getMerchantUserAccountNo()).get();
 
             if(request.getMobileNo()!=null)
             {
                 Optional<Customer> existingAccount = customerRepository.findByMobileNo(request.getMobileNo());
                 //not common
                 if(existingAccount.isEmpty())
+                {
+                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer PhoneNumber could not be found");
+                }
 
                 Optional<Transaction> DCustomer = transactionRepository.findByOTPAndMobileNo(request.getOtp(),request.getMobileNo());
                 if(DCustomer.isEmpty())
+                {
+                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.NOT_FOUND,"Invalid OTP or MobileNo");
+                }
+
                 Transaction DTransaction = DCustomer.get();
                 Account DefaultAccount = accountRepository.findById(DTransaction.getAccount().getAccountNo()).get();
 
                 if(DTransaction.getAmount()>MerchantAccount.getBalance())
+                {
+                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.BAD_REQUEST,"Insufficient balance");
+                }
+
 
                 DefaultAccount.setBalance(DefaultAccount.getBalance()+DTransaction.getAmount());
                 accountRepository.save(DefaultAccount);
 
                 DTransaction.setResponseCode(ResponseCode.successful);
                 transactionRepository.save(DTransaction);
+
+                History existingHistory = historyRepository.findByRrn(DTransaction.getRrn());
+                existingHistory.setResponseCode(ResponseCode.successful);
+                historyRepository.save(existingHistory);
                 //update the DCustomer History
                 //TO-DO
                 MerchantAccount.setBalance(MerchantAccount.getBalance()-DTransaction.getAmount());
                 accountRepository.save(MerchantAccount);
-                transactionRepository.save(new Transaction(TransactionCode.Withdrawal,MerchantAccount,SIDE.Debit, DTransaction.getAmount(), ResponseCode.successful));
+                CustomerProfileByAccountDTO customerProfileByAccountDTO = customerProfileExtractor(request.getMerchantUserAccountNo());
+                Transaction mTransactionNew = transactionRepository.save(new Transaction(TransactionCode.Deposit,MerchantAccount,SIDE.Debit, DTransaction.getAmount(), ResponseCode.successful));
+                historyRepository.save(new History(mTransactionNew,TransactionCode.Deposit,MerchantAccount,SIDE.Debit, DTransaction.getAmount(), ResponseCode.successful,customerProfileByAccountDTO.getMobileNo()));
                 //update the MCustomer History
                 //TO-DO
             }
-            else if(request.getdAccountNo()!=0)
+            else if(request.getDefaultUserAccountNo()!=0)
             {
-                if(!isTheAccountExists(request.getdAccountNo()))
+                if(!isTheAccountExists(request.getDefaultUserAccountNo()))
+                {
+                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer Account can not be found");
+                }
 
-                Optional<Transaction> DCustomer = transactionRepository.findByOTPAndAccount_AccountNo(request.getOtp(),request.getdAccountNo());
+
+                Optional<Transaction> DCustomer = transactionRepository.findByOTPAndAccount_AccountNo(request.getOtp(),request.getDefaultUserAccountNo());
                 if(DCustomer.isEmpty())
+                {
+                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.NOT_FOUND,"Invalid OTP or AccountNo");
+                }
+
 
                 Transaction DTransaction = DCustomer.get();
-                Account DefaultAccount = accountRepository.findById(request.getdAccountNo()).get();
+                Account DefaultAccount = accountRepository.findById(request.getDefaultUserAccountNo()).get();
 
                 if(DTransaction.getAmount()>MerchantAccount.getBalance())
+                {
+                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
+                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.BAD_REQUEST,"Insufficient balance");
+                }
+
 
                 DefaultAccount.setBalance(DefaultAccount.getBalance()+DTransaction.getAmount());
                 accountRepository.save(DefaultAccount);
@@ -263,13 +330,18 @@ public class AccountServiceImpl implements AccountService{
                 DTransaction.setResponseCode(ResponseCode.successful);
                 transactionRepository.save(DTransaction);
 
+                History existingHistory = historyRepository.findByRrn(DTransaction.getRrn());
+                existingHistory.setResponseCode(ResponseCode.successful);
+                historyRepository.save(existingHistory);
                 //update the DCustomer History
                 //TO-DO
 
                 MerchantAccount.setBalance(MerchantAccount.getBalance()-DTransaction.getAmount());
                 accountRepository.save(MerchantAccount);
+                CustomerProfileByAccountDTO customerProfileByAccountDTO = customerProfileExtractor(request.getMerchantUserAccountNo());
+                Transaction mTransactionNew  = transactionRepository.save(new Transaction(TransactionCode.Deposit,MerchantAccount,SIDE.Debit,DTransaction.getAmount(),ResponseCode.successful));
+                historyRepository.save(new History(mTransactionNew,TransactionCode.Deposit,MerchantAccount,SIDE.Debit, DTransaction.getAmount(), ResponseCode.successful,customerProfileByAccountDTO.getMobileNo()));
 
-                transactionRepository.save(new Transaction(TransactionCode.Withdrawal,MerchantAccount,SIDE.Debit,DTransaction.getAmount(),ResponseCode.successful));
                 //update the MCustomer History
                 //TO-DO
             }
@@ -281,32 +353,48 @@ public class AccountServiceImpl implements AccountService{
 
     public  ResponseModel withdrawal (TransactionRequestDTOtemp request)
     {
-        if(request.getmAccountNo()==0)
+        if(request.getMerchantUserAccountNo()==0)
         {
 
-            if(!isTheAccountExists(request.getdAccountNo()))
+            if(!isTheAccountExists(request.getDefaultUserAccountNo()))
                 throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer Account can not be found");
 
-            CustomerProfileByAccountDTO customerProfileByAccountDTO = customerProfileExtractor(request.getdAccountNo());
+            if(request.getAmount()<=0){
+                throw new ErrorMessage( HttpStatus.BAD_REQUEST, "amount must be greater than 0");
+            }
+
+            CustomerProfileByAccountDTO customerProfileByAccountDTO = customerProfileExtractor(request.getDefaultUserAccountNo());
             if(customerProfileByAccountDTO.getCustomerProfile()!= CustomerProfile.Default)
+            {
+                historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                 throw new ErrorMessage(HttpStatus.BAD_REQUEST,"bad request");
+            }
 
             //then it is default customer deposit
-            Account account = accountRepository.findById(request.getdAccountNo()).get();
+            Account account = accountRepository.findById(request.getDefaultUserAccountNo()).get();
             Customer customerData = customerRepository.findById(customerProfileByAccountDTO.getCif()).get();
 
             if(account.getBalance()<=request.getAmount())
+            {
+                historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                 throw new ErrorMessage(HttpStatus.BAD_REQUEST,"Insufficient balance");
+            }
+
 
             if(customerData.getMobileNo()==null || Objects.equals(customerData.getMobileNo(), ""))
+            {
+                historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                 throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer MobileNo could not be found");
+            }
+
 
             int generatedOtp = otpGenerator();
-            transactionRepository.save(transactionSaverForDepositWithdrawal(TransactionCode.Withdrawal,account,SIDE.Debit, request.getAmount(), ResponseCode.pending,generatedOtp));
-            otpHandler(generatedOtp,customerData.getMobileNo());
-
+            Transaction createdTransaction = transactionRepository.save(transactionSaverForDepositWithdrawal(TransactionCode.Withdrawal,account,SIDE.Debit, request.getAmount(), ResponseCode.pending,generatedOtp));
+//            otpHandler(generatedOtp,customerData.getMobileNo());
+            historyRepository.save(new History(createdTransaction,TransactionCode.Withdrawal,account,SIDE.Debit, request.getAmount(),ResponseCode.successful, customerProfileByAccountDTO.getMobileNo()));
             //TO-DO historyRepository.save()
             //TO-DO return ResponseModel
+            return new ResponseModel(true,"operation completed successfully. Your OTP is "+generatedOtp);
         }
         else{
 
@@ -314,58 +402,92 @@ public class AccountServiceImpl implements AccountService{
             if(isOtpExpired(request.getOtp()))
                 throw new ErrorMessage(HttpStatus.BAD_REQUEST, "OTP expired");
             //common
-            if(!isTheAccountExists(request.getmAccountNo()))
+            if(!isTheAccountExists(request.getMerchantUserAccountNo()))
                 throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer Account can not be found");
             //common
-            CustomerProfileByAccountDTO McustomerProfileByAccountDTO = customerProfileExtractor(request.getmAccountNo());
+            CustomerProfileByAccountDTO McustomerProfileByAccountDTO = customerProfileExtractor(request.getMerchantUserAccountNo());
             if(McustomerProfileByAccountDTO.getCustomerProfile()!=CustomerProfile.Merchant)
+            {
+                historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
                 throw new ErrorMessage(HttpStatus.BAD_REQUEST,"bad request");
+            }
+
             //common
-            Account MerchantAccount = accountRepository.findById(request.getmAccountNo()).get();
+            Account MerchantAccount = accountRepository.findById(request.getMerchantUserAccountNo()).get();
 
             if(request.getMobileNo()!=null)
             {
                 Optional<Customer> existingAccount = customerRepository.findByMobileNo(request.getMobileNo());
                 //not common
                 if(existingAccount.isEmpty())
+                {
+                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer PhoneNumber could not be found");
+                }
+
 
                 Optional<Transaction> DCustomer = transactionRepository.findByOTPAndMobileNo(request.getOtp(),request.getMobileNo());
                 if(DCustomer.isEmpty())
+                {
+                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.NOT_FOUND,"Invalid OTP or MobileNo");
+                }
+
                 Transaction DTransaction = DCustomer.get();
                 Account DefaultAccount = accountRepository.findById(DTransaction.getAccount().getAccountNo()).get();
 
                 if(DTransaction.getAmount()>DefaultAccount.getBalance())
+                {
+                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.BAD_REQUEST,"Insufficient balance");
+                }
 
                 DefaultAccount.setBalance(DefaultAccount.getBalance()-DTransaction.getAmount());
                 accountRepository.save(DefaultAccount);
 
                 DTransaction.setResponseCode(ResponseCode.successful);
                 transactionRepository.save(DTransaction);
+
+
+                History existingHistory = historyRepository.findByRrn(DTransaction.getRrn());
+                existingHistory.setResponseCode(ResponseCode.successful);
+                historyRepository.save(existingHistory);
                 //update the DCustomer History
                 //TO-DO
                 MerchantAccount.setBalance(MerchantAccount.getBalance()+DTransaction.getAmount());
                 accountRepository.save(MerchantAccount);
-                transactionRepository.save(new Transaction(TransactionCode.Deposit,MerchantAccount,SIDE.Credit, DTransaction.getAmount(), ResponseCode.successful));
+                CustomerProfileByAccountDTO customerProfileByAccountDTO = customerProfileExtractor(request.getMerchantUserAccountNo());
+                Transaction mTransactionNew = transactionRepository.save(new Transaction(TransactionCode.Withdrawal,MerchantAccount,SIDE.Credit, DTransaction.getAmount(), ResponseCode.successful));
+                historyRepository.save(new History(mTransactionNew,TransactionCode.Withdrawal,MerchantAccount,SIDE.Credit, DTransaction.getAmount(), ResponseCode.successful,customerProfileByAccountDTO.getMobileNo()));
                 //update the MCustomer History
                 //TO-DO
             }
-            else if(request.getdAccountNo()!=0)
+            else if(request.getDefaultUserAccountNo()!=0)
             {
-                if(!isTheAccountExists(request.getdAccountNo()))
+                if(!isTheAccountExists(request.getDefaultUserAccountNo()))
+                {
+                    historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer Account can not be found");
+                }
 
-                Optional<Transaction> DCustomer = transactionRepository.findByOTPAndAccount_AccountNo(request.getOtp(),request.getdAccountNo());
+
+                Optional<Transaction> DCustomer = transactionRepository.findByOTPAndAccount_AccountNo(request.getOtp(),request.getDefaultUserAccountNo());
                 if(DCustomer.isEmpty())
+                {
+                    historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.NOT_FOUND,"Invalid OTP or AccountNo");
+                }
+
 
                 Transaction DTransaction = DCustomer.get();
-                Account DefaultAccount = accountRepository.findById(request.getdAccountNo()).get();
+                Account DefaultAccount = accountRepository.findById(request.getDefaultUserAccountNo()).get();
 
                 if(DTransaction.getAmount()>DefaultAccount.getBalance())
+                {
+                    historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
+                    historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.BAD_REQUEST,"Insufficient balance");
+                }
 
                 DefaultAccount.setBalance(DefaultAccount.getBalance()-DTransaction.getAmount());
                 accountRepository.save(DefaultAccount);
@@ -373,13 +495,15 @@ public class AccountServiceImpl implements AccountService{
                 DTransaction.setResponseCode(ResponseCode.successful);
                 transactionRepository.save(DTransaction);
 
-                //update the DCustomer History
-                //TO-DO
+                History existingHistory = historyRepository.findByRrn(DTransaction.getRrn());
+                existingHistory.setResponseCode(ResponseCode.successful);
+                historyRepository.save(existingHistory);
 
                 MerchantAccount.setBalance(MerchantAccount.getBalance()+DTransaction.getAmount());
                 accountRepository.save(MerchantAccount);
-
-                transactionRepository.save(new Transaction(TransactionCode.Deposit,MerchantAccount,SIDE.Credit,DTransaction.getAmount(),ResponseCode.successful));
+                CustomerProfileByAccountDTO customerProfileByAccountDTO = customerProfileExtractor(request.getMerchantUserAccountNo());
+                Transaction mTransactionNew =  transactionRepository.save(new Transaction(TransactionCode.Withdrawal,MerchantAccount,SIDE.Credit,DTransaction.getAmount(),ResponseCode.successful));
+                historyRepository.save(new History(mTransactionNew,TransactionCode.Withdrawal,MerchantAccount,SIDE.Credit, DTransaction.getAmount(), ResponseCode.successful,customerProfileByAccountDTO.getMobileNo()));
                 //update the MCustomer History
                 //TO-DO
             }
@@ -390,6 +514,8 @@ public class AccountServiceImpl implements AccountService{
         return new ResponseModel(true,"operation completed successfully");
     }
 
+
+    //possible error on otpHandler .onErrorMap
     private void otpHandler(int otp, String mobileNo)
     {
         OtpRequestDTO requestBody = otpRequestDTOSetter(otp, mobileNo);
@@ -397,7 +523,7 @@ public class AccountServiceImpl implements AccountService{
         responseBodyMono
                 .map(responseBody -> "Processed: " + responseBody)
                 .doOnSuccess(result -> log.info("Account content: {}", result))
-                .onErrorMap(throwable -> new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during OTP sending"))
+                .onErrorMap(Error -> new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during OTP sending"))
                 .subscribe();
     }
     private boolean isTheAccountExists(long accountNo)
@@ -424,12 +550,16 @@ public class AccountServiceImpl implements AccountService{
     {
         if(!isTheAccountExists(topup.getAccountNo()))
             throw new ErrorMessage(HttpStatus.NOT_FOUND,"user account number could not be found");
+
         Account account = accountRepository.findById(topup.getAccountNo()).get();
         if(account.getBalance()<topup.getAmount())
             throw new ErrorMessage(HttpStatus.BAD_REQUEST, "Insufficient balance");
         TopUpResponseDTO returnedResponse = topUpfetch(topup.getAmount());
         account.setBalance(account.getBalance()-topup.getAmount());
+        String phoneNo = customerProfileExtractor(topup.getAccountNo()).getMobileNo();
         accountRepository.save(account);
+        Transaction createdTransaction = transactionRepository.save(new Transaction(TransactionCode.AirTimeTopUp,account,SIDE.Debit,topup.getAmount(),ResponseCode.successful));
+        historyRepository.save(new History(createdTransaction,TransactionCode.AirTimeTopUp,account,SIDE.Debit,topup.getAmount(),ResponseCode.successful,phoneNo));
         return returnedResponse;
 
 

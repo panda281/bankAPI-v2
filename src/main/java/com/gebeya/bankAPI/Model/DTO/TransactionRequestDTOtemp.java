@@ -1,48 +1,48 @@
 package com.gebeya.bankAPI.Model.DTO;
 
 public class TransactionRequestDTOtemp {
-    private long dAccountNo;
+    private long defaultUserAccountNo;
     private double amount;
     private String mobileNo;
     private int otp;
-    private long mAccountNo;
+    private long merchantUserAccountNo;
 
     public TransactionRequestDTOtemp() {
     }
 
-    public TransactionRequestDTOtemp(long dAccountNo, double amount, String mobileNo, int otp, long mAccountNo) {
-        this.dAccountNo = dAccountNo;
+    public TransactionRequestDTOtemp(long defaultUserAccountNo, double amount, String mobileNo, int otp, long merchantUserAccountNo) {
+        this.defaultUserAccountNo = defaultUserAccountNo;
         this.amount = amount;
         this.mobileNo = mobileNo;
         this.otp = otp;
-        this.mAccountNo = mAccountNo;
+        this.merchantUserAccountNo = merchantUserAccountNo;
     }
 
-    public TransactionRequestDTOtemp(long dAccountNo, double amount){
-        this.dAccountNo = dAccountNo;
+    public TransactionRequestDTOtemp(long defaultUserAccountNo, double amount){
+        this.defaultUserAccountNo = defaultUserAccountNo;
         this.amount = amount;
     }
 
-    public TransactionRequestDTOtemp(long dAccountNo, double amount, int otp, long mAccountNo)
+    public TransactionRequestDTOtemp(long defaultUserAccountNo, double amount, int otp, long merchantUserAccountNo)
     {
-        this.dAccountNo = dAccountNo;
+        this.defaultUserAccountNo = defaultUserAccountNo;
         this.amount = amount;
         this.otp =otp;
-        this.mAccountNo = mAccountNo;
+        this.merchantUserAccountNo = merchantUserAccountNo;
     }
-    public TransactionRequestDTOtemp(long mAccountNo, int otp, String MobileNo)
+    public TransactionRequestDTOtemp(long merchantUserAccountNo, int otp, String MobileNo)
     {
-        this.mAccountNo = mAccountNo;
+        this.merchantUserAccountNo = merchantUserAccountNo;
         this.otp =otp;
         this.mobileNo =MobileNo;
     }
 
-    public long getdAccountNo() {
-        return dAccountNo;
+    public long getDefaultUserAccountNo() {
+        return defaultUserAccountNo;
     }
 
-    public void setdAccountNo(long dAccountNo) {
-        this.dAccountNo = dAccountNo;
+    public void setDefaultUserAccountNo(long defaultUserAccountNo) {
+        this.defaultUserAccountNo = defaultUserAccountNo;
     }
 
     public double getAmount() {
@@ -69,22 +69,22 @@ public class TransactionRequestDTOtemp {
         this.otp = otp;
     }
 
-    public long getmAccountNo() {
-        return mAccountNo;
+    public long getMerchantUserAccountNo() {
+        return merchantUserAccountNo;
     }
 
-    public void setmAccountNo(long mAccountNo) {
-        this.mAccountNo = mAccountNo;
+    public void setMerchantUserAccountNo(long merchantUserAccountNo) {
+        this.merchantUserAccountNo = merchantUserAccountNo;
     }
 
     @Override
     public String toString() {
         return "TransactionRequestDTOtemp{" +
-                "DAccountNo=" + dAccountNo +
+                "defaultUserAccountNo=" + defaultUserAccountNo +
                 ", amount=" + amount +
-                ", MobileNo='" + mobileNo + '\'' +
+                ", mobileNo='" + mobileNo + '\'' +
                 ", otp=" + otp +
-                ", MAccountNo=" + mAccountNo +
+                ", merchantUserAccountNo=" + merchantUserAccountNo +
                 '}';
     }
 }

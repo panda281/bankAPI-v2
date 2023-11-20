@@ -1,5 +1,7 @@
 package com.gebeya.bankAPI.Model.Entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.gebeya.bankAPI.Model.Enums.ResponseCode;
 import com.gebeya.bankAPI.Model.Enums.SIDE;
 import com.gebeya.bankAPI.Model.Enums.TransactionCode;
@@ -12,8 +14,15 @@ public class History {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
+
+    @OneToOne
+    @JsonBackReference
+    @JoinColumn(name = "rrn")
+    private Transaction transaction;
     private TransactionCode transactionCode;
     @ManyToOne
+
     private Account account;
     private SIDE side;
     private double amount;
@@ -24,6 +33,7 @@ public class History {
     public History() {
     }
 
+    //for financial services when their transaction are failed
     public History(TransactionCode transactionCode, Account account, SIDE side, double amount, ResponseCode responseCode, String phoneNo) {
         this.transactionCode = transactionCode;
         this.account = account;
@@ -34,20 +44,45 @@ public class History {
 
     }
 
-    public History(TransactionCode transactionCode, Account account, double amount, ResponseCode responseCode, String phoneNo) {
+    public History(TransactionCode transactionCode, Account account, SIDE side, double amount, ResponseCode responseCode) {
         this.transactionCode = transactionCode;
         this.account = account;
+        this.side = side;
+        this.amount = amount;
+        this.responseCode = responseCode;
+
+    }
+
+    //for financial services when their transactions are successful
+
+
+    public History(Transaction transaction, TransactionCode transactionCode, Account account, SIDE side, double amount, ResponseCode responseCode, String phoneNo) {
+        this.transaction = transaction;
+        this.transactionCode = transactionCode;
+        this.account = account;
+        this.side = side;
         this.amount = amount;
         this.responseCode = responseCode;
         this.phoneNo = phoneNo;
-
     }
+
+
+
+    //for non financial service
     public History(String phoneNo,ResponseCode responseCode,TransactionCode transactionCode,Account account)
     {
         this.phoneNo = phoneNo;
         this.responseCode=responseCode;
         this.transactionCode=transactionCode;
         this.account=account;
+    }
+
+    public Transaction getTransaction() {
+        return transaction;
+    }
+
+    public void setTransaction(Transaction transaction) {
+        this.transaction = transaction;
     }
 
     public int getId() {

@@ -26,7 +26,9 @@ public class Transaction {
     private ResponseCode responseCode;
     private int OTP;
     private LocalDateTime transactionDate;
-
+    @OneToOne
+    @JsonBackReference
+    private History history;
     public Transaction() {
     }
 
