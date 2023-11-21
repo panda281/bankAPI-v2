@@ -57,4 +57,9 @@ public class MobileBankingUserServiceImpl implements MobileBankingUserService{
         mobileBankingUserRepository.save(mobileBankingUser);
         return new ResponseModel(true,"account saved successfully");
     }
+
+    public Iterable<MobileBankingUser> getAllMobileBankingUsers()
+    {
+        return mobileBankingUserRepository.findAll();
+    }
 }

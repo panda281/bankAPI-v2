@@ -97,6 +97,9 @@ public class TransactionServiceImpl implements TransactionService{
             throw new ErrorMessage(HttpStatus.NOT_FOUND,"Account could not be found");
             String phoneNo = accountService.customerProfileExtractor(accountNo).getMobileNo();
         historyRepository.save(new History(phoneNo,ResponseCode.successful,TransactionCode.ShortStatement,accountRepository.findById(accountNo).get()));
+        List<ShortStatementDTO> shortStatements = transactionRepository.findFirst5ByAccount_AccountNoOrderByTransactionDate(accountNo);
+        if(shortStatements.isEmpty())
+            throw new ErrorMessage(HttpStatus.NOT_FOUND,"Transaction is empty");
         return transactionRepository.findFirst5ByAccount_AccountNoOrderByTransactionDate(accountNo);
     }
 

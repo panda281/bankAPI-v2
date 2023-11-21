@@ -1,5 +1,7 @@
 package com.gebeya.bankAPI.Model.Entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
@@ -9,8 +11,7 @@ import java.util.List;
 @Entity
 public class Customer {
         @Id
-        @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "customerSequenceGenerator")
-        @SequenceGenerator(name = "customerSequenceGenerator", sequenceName = "customer_sequence",allocationSize = 1, initialValue = 10000000)
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long cif;
         private String firstName;
         private String salutation;
@@ -26,12 +27,14 @@ public class Customer {
         private String homePhone;
 //        @UniqueConstraint()
         private String mobileNo;
-        @OneToMany(mappedBy = "customer")
+        @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
         @JsonManagedReference
         private List<Account> account;
 
-        @OneToOne(mappedBy = "customer")
-        @JsonManagedReference
+
+        @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL)
+        @JsonBackReference
+        @JsonIgnore
         private MobileBankingUser user;
 
         public Customer() {

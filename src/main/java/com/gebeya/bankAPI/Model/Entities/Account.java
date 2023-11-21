@@ -1,6 +1,7 @@
 package com.gebeya.bankAPI.Model.Entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.gebeya.bankAPI.Model.Enums.AccountStatus;
 import jakarta.persistence.*;
@@ -23,7 +24,8 @@ public class Account {
     private AccountStatus accountStatus;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    @OneToMany(mappedBy = "account")
+    @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @JsonIgnore
     @JsonManagedReference
     private List<Transaction> transaction;
 

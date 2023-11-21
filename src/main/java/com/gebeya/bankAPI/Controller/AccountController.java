@@ -6,6 +6,7 @@ import com.gebeya.bankAPI.Model.Entities.Account;
 import com.gebeya.bankAPI.Repository.HistoryRepository;
 import com.gebeya.bankAPI.Service.AccountService;
 import com.gebeya.bankAPI.Service.MobileBankingUserService;
+import com.gebeya.bankAPI.Service.Profile;
 import com.gebeya.bankAPI.Service.TransactionService;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,15 +32,15 @@ public class AccountController {
     TransactionService transactionService;
     MobileBankingUserService mobileBankingUserService;
 
-    ResourceBundleMessageSource messageSource;
+    Profile profile;
 
     @Autowired
-    public AccountController(AccountService accountService, TransactionService transactionService, MobileBankingUserService mobileBankingUserService, ResourceBundleMessageSource messageSource)
+    public AccountController(AccountService accountService, TransactionService transactionService, MobileBankingUserService mobileBankingUserService, Profile profile)
     {
         this.accountService=accountService;
         this.transactionService=transactionService;
         this.mobileBankingUserService = mobileBankingUserService;
-        this.messageSource=messageSource;
+        this.profile=profile;
     }
 
     //it works
@@ -88,7 +89,7 @@ public class AccountController {
             @ApiResponse(responseCode = "200", description = "when an operation complete successfully"),
             @ApiResponse(responseCode = "400", description = "when OTP expire"),
             @ApiResponse(responseCode = "400", description = "when bad request happens"),
-            @ApiResponse(responseCode = "400", description = "when unknown error occured"),
+            @ApiResponse(responseCode = "400", description = "when unknown error occurred"),
             @ApiResponse(responseCode = "400", description = "when the balance is insufficient"),
             @ApiResponse(responseCode = "404", description = "when a customer account can not be found"),
             @ApiResponse(responseCode = "404", description = "when a customer mobile could not be found"),
@@ -133,21 +134,27 @@ public class AccountController {
     }
 
     @GetMapping("/changelanguage")
-    public String[] changelanguage(@RequestHeader("Accept-Language") String locale) {
-        Locale locale1 = new Locale(locale);
-        String[] messages = new String[8];
-        for(int i = 0;i<messages.length;i++)
-        {
-            String messageKey = "message" + i;
-            messages[i] =messageSource.getMessage(messageKey,null,locale1);
-        }
-        return messages;
+    public ResponseEntity<?> changelanguage(@RequestHeader("Accept-Language") String locale) {
+        return ResponseEntity.ok(profile.language(locale));
     }
 
     @PostMapping("/topup")
     public ResponseEntity<?> airtime(@RequestBody topUpRequestDTO top){
         TopUpResponseDTO topup = accountService.topUp(top);
         return ResponseEntity.ok(topup);
+    }
+
+    @GetMapping("/mobileBankingUsers")
+    public ResponseEntity<?> MobileBankingUser()
+    {
+        return ResponseEntity.ok(mobileBankingUserService.getAllMobileBankingUsers());
+    }
+
+
+    @DeleteMapping("/account/{id}")
+    public ResponseEntity<?> DeleteAccount(@PathVariable("id") long accountNo)
+    {
+        return ResponseEntity.ok(accountService.deleteAccountCustomer(accountNo));
     }
 
 //    @GetMapping("/test/{id}")

@@ -1,6 +1,7 @@
 package com.gebeya.bankAPI.Model.Entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.gebeya.bankAPI.Model.Entities.Account;
 import com.gebeya.bankAPI.Model.Enums.ResponseCode;
 import com.gebeya.bankAPI.Model.Enums.SIDE;
@@ -26,8 +27,8 @@ public class Transaction {
     private ResponseCode responseCode;
     private int OTP;
     private LocalDateTime transactionDate;
-    @OneToOne
-    @JsonBackReference
+    @OneToOne(mappedBy = "transaction")
+    @JsonIgnore
     private History history;
     public Transaction() {
     }

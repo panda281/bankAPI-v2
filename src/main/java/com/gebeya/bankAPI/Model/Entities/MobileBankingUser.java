@@ -1,6 +1,7 @@
 package com.gebeya.bankAPI.Model.Entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.gebeya.bankAPI.Model.Enums.CustomerProfile;
 import jakarta.persistence.*;
 
@@ -17,7 +18,7 @@ public class MobileBankingUser {
     private String language;
     @OneToOne
     @JoinColumn(name = "cif")
-    @JsonBackReference
+    @JsonManagedReference
     private Customer customer;
 
     public MobileBankingUser() {

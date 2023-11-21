@@ -21,6 +21,8 @@ public interface AccountService {
 
     public TopUpResponseDTO topUp(topUpRequestDTO topup);
 
+    public ResponseModel deleteAccountCustomer(long AccountNo);
+
 
 
 }

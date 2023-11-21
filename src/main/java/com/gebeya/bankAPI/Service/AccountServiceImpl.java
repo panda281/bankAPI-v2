@@ -68,13 +68,26 @@ public class AccountServiceImpl implements AccountService{
         Optional<Account> optionalAccount = accountRepository.findById(accountId);
         if (optionalAccount.isEmpty())
             throw new ErrorMessage(HttpStatus.NOT_FOUND,"Account not found");
+
             Account existingAccount = optionalAccount.get();
             existingAccount.setBalance(account.getBalance());
             existingAccount.setAccountStatus(account.getAccountStatus());
-            existingAccount.setCustomer(account.getCustomer());
 
+            Customer existingCustomer = customerRepository.findById(existingAccount.getCustomer().getCif()).get();
+            existingCustomer.setCity(account.getCustomer().getCity());
+            existingCustomer.setCountry(account.getCustomer().getCountry());
+            existingCustomer.setDob(account.getCustomer().getDob());
+            existingCustomer.setEmail(account.getCustomer().getEmail());
+            existingCustomer.setFirstName(account.getCustomer().getFirstName());
+            existingCustomer.setHomePhone(account.getCustomer().getHomePhone());
+            existingCustomer.setHomePostalAddress(account.getCustomer().getHomePostalAddress());
+            existingCustomer.setLastName(account.getCustomer().getLastName());
+            existingCustomer.setMiddleName(account.getCustomer().getMiddleName());
+            existingCustomer.setMobileNo(account.getCustomer().getMobileNo());
+            existingCustomer.setPostalCode(account.getCustomer().getPostalCode());
+            existingCustomer.setSalutation(account.getCustomer().getSalutation());
 
-
+            existingAccount.setCustomer(customerRepository.save(existingCustomer));
             accountRepository.save(existingAccount);
 
             return new ResponseModel(true, "Account and associated customer updated successfully");
@@ -101,10 +114,11 @@ public class AccountServiceImpl implements AccountService{
 
         Account senderAccount = accountRepository.findById(transferDTO.getSenderAccountNo()).get();
         Account receiverAccount = accountRepository.findById(transferDTO.getReceiverAccountNo()).get();
+        double amount= transferDTO.getAmount();
         CustomerProfileByAccountDTO  senderMobileNo = customerProfileExtractor(senderAccount.getAccountNo());
         CustomerProfileByAccountDTO  receiverMobileNo = customerProfileExtractor(receiverAccount.getAccountNo());
 
-        if(transferDTO.getAmount()<=0)
+        if(amount<=0)
             throw new ErrorMessage(HttpStatus.BAD_REQUEST,"amount must be greater than 0");
 
         if(senderAccount.getAccountStatus().equals(AccountStatus.Blocked) || receiverAccount.getAccountStatus().equals(AccountStatus.Blocked))
@@ -142,6 +156,8 @@ public class AccountServiceImpl implements AccountService{
     }
 
     public CustomerProfileByAccountDTO customerProfileExtractor(long accountNo){
+        if(customerRepository.customerProfileExtractor(accountNo).isEmpty())
+            return new CustomerProfileByAccountDTO();
         return new CustomerProfileByAccountDTO(customerRepository.customerProfileExtractor(accountNo).get());
     }
 
@@ -581,6 +597,19 @@ public class AccountServiceImpl implements AccountService{
                 .block();
 
         return jsonResponse;
+    }
+    @Override
+    public ResponseModel deleteAccountCustomer(long AccountNo)
+    {
+        if(!isTheAccountExists(AccountNo))
+        {
+            throw new ErrorMessage(HttpStatus.NOT_FOUND,"Account could not be found");
+        }
+
+
+        customerRepository.deleteById(accountRepository.findById(AccountNo).get().getCustomer().getCif());
+        accountRepository.deleteById(AccountNo);
+    return new ResponseModel(true,"account deleted successfully");
     }
 
 

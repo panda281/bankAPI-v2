@@ -39,4 +39,13 @@ public class CustomerController {
     public ResponseEntity<Iterable<Customer>> listAllCustomer (){
         return ResponseEntity.ok(customerService.getAllCustomer());
     }
+
+    //
+//    @DeleteMapping("/customer/{id}")
+//    public ResponseEntity<?> deleteCustomer(@PathVariable("id") long customerId)
+//    {
+//        return ResponseEntity.ok(customerService.deleteCustomer(customerId));
+//    }
+
+
 }

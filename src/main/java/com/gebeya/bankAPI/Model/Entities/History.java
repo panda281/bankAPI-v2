@@ -17,12 +17,11 @@ public class History {
 
 
     @OneToOne
-    @JsonBackReference
+    @JsonManagedReference
     @JoinColumn(name = "rrn")
     private Transaction transaction;
     private TransactionCode transactionCode;
     @ManyToOne
-
     private Account account;
     private SIDE side;
     private double amount;

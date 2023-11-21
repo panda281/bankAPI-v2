@@ -18,4 +18,5 @@ public interface CustomerRepository extends CrudRepository<Customer,Long> {
 
     @Query("SELECT new com.gebeya.bankAPI.Model.DTO.CustomerProfileByAccountDTO(c.cif,m.customerProfile,c.mobileNo) from MobileBankingUser m join Customer  c on c.cif = m.customer.cif join Account  a on c.cif = a.customer.cif where a.accountNo = :accountNo")
     Optional<CustomerProfileByAccountDTO> customerProfileExtractor(@Param("accountNo") long accountNo);
+
 }
