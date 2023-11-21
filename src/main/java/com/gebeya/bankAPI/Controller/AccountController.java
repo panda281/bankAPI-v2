@@ -113,7 +113,7 @@ public class AccountController {
 
 
 
-    @GetMapping("/ShortStatement/{id}")
+    @GetMapping("/ShortStatement/{AccountNo}")
     public ResponseEntity<?> statement(@PathVariable("AccountNo") long id)
     {
         List<ShortStatementDTO> shortStatementDTO = transactionService.shortStatement(id);
@@ -122,7 +122,7 @@ public class AccountController {
 
 
 
-    @GetMapping("/CheckBalance/{id}")
+    @GetMapping("/CheckBalance/{AccountNo}")
     public ResponseEntity<?> checkBalance(@PathVariable("AccountNo") long accountNo){
         return ResponseEntity.ok(accountService.checkBalance(accountNo));
     }
