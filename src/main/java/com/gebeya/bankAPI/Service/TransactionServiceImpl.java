@@ -2,13 +2,9 @@ package com.gebeya.bankAPI.Service;
 
 import com.gebeya.bankAPI.Exception.ErrorMessage;
 import com.gebeya.bankAPI.Model.DTO.*;
-import com.gebeya.bankAPI.Model.Entities.Account;
-import com.gebeya.bankAPI.Model.Entities.Customer;
 import com.gebeya.bankAPI.Model.Entities.History;
 import com.gebeya.bankAPI.Model.Entities.Transaction;
-import com.gebeya.bankAPI.Model.Enums.AccountStatus;
 import com.gebeya.bankAPI.Model.Enums.ResponseCode;
-import com.gebeya.bankAPI.Model.Enums.SIDE;
 import com.gebeya.bankAPI.Model.Enums.TransactionCode;
 import com.gebeya.bankAPI.Repository.AccountRepository;
 import com.gebeya.bankAPI.Repository.CustomerRepository;
@@ -17,20 +13,13 @@ import com.gebeya.bankAPI.Repository.TransactionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
 
 import static reactor.core.publisher.Signal.subscribe;
 
@@ -75,7 +64,10 @@ public class TransactionServiceImpl implements TransactionService{
             long minuteDifference = duration.toMinutes();
             if(minuteDifference>30){
                 transaction.setResponseCode(ResponseCode.failed);
-                transactionRepository.save(transaction);
+                Transaction t= transactionRepository.save(transaction);
+                History h= historyRepository.findByRrn(t.getRrn());
+                h.setResponseCode(ResponseCode.failed);
+                historyRepository.save(h);
             }
 
         }
@@ -83,7 +75,10 @@ public class TransactionServiceImpl implements TransactionService{
     }
 
 
-
+    public List<Transaction> listAllTransactions()
+    {
+        return transactionRepository.findAll();
+    }
 
 
 

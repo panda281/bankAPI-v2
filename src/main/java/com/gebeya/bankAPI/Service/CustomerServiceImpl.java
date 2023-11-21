@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 
 @Service
 public class CustomerServiceImpl implements CustomerService{
@@ -26,6 +28,13 @@ public class CustomerServiceImpl implements CustomerService{
 //    {
 //        return customerRepository.save(customer);
 //    }
+
+    public Optional<Customer> findCustomerById(long id)
+    {
+        if(!customerRepository.existsById(id))
+            throw new ErrorMessage(HttpStatus.NOT_FOUND,"CustomerID could not be found");
+        return customerRepository.findById(id);
+    }
 
     @Override
     public Iterable<Customer> getAllCustomer(){

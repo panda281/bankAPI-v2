@@ -27,7 +27,7 @@ public class Transaction {
     private ResponseCode responseCode;
     private int OTP;
     private LocalDateTime transactionDate;
-    @OneToOne(mappedBy = "transaction")
+    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL)
     @JsonIgnore
     private History history;
     public Transaction() {

@@ -24,10 +24,16 @@ public class Account {
     private AccountStatus accountStatus;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
     @JsonIgnore
     @JsonManagedReference
     private List<Transaction> transaction;
+
+    @OneToMany(mappedBy = "account",cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<History> history;
+
+
 
     public Account() {
     }

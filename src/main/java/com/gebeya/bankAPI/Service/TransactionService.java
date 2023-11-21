@@ -13,4 +13,6 @@ public interface TransactionService {
     public Transaction addTransaction(Transaction transaction);
 
     public List<ShortStatementDTO> shortStatement(long accountNo);
+
+    public List<Transaction> listAllTransactions();
 }

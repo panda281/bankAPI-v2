@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/api/v2")
 public class CustomerController {
@@ -40,12 +42,17 @@ public class CustomerController {
         return ResponseEntity.ok(customerService.getAllCustomer());
     }
 
+    @GetMapping("/customer/{id}")
+    public ResponseEntity<Optional<Customer>> findCustomerById (@PathVariable("id") long id){
+        return ResponseEntity.ok(customerService.findCustomerById(id));
+    }
+
     //
-//    @DeleteMapping("/customer/{id}")
-//    public ResponseEntity<?> deleteCustomer(@PathVariable("id") long customerId)
-//    {
-//        return ResponseEntity.ok(customerService.deleteCustomer(customerId));
-//    }
+    @DeleteMapping("/customer/{id}")
+    public ResponseEntity<?> deleteCustomer(@PathVariable("id") long customerId)
+    {
+        return ResponseEntity.ok(customerService.deleteCustomer(customerId));
+    }
 
 
 }

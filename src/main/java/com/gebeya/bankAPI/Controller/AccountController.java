@@ -113,8 +113,8 @@ public class AccountController {
 
 
 
-    @GetMapping("/ShortStatement")
-    public ResponseEntity<?> statement(@RequestParam long id)
+    @GetMapping("/ShortStatement/{id}")
+    public ResponseEntity<?> statement(@PathVariable("AccountNo") long id)
     {
         List<ShortStatementDTO> shortStatementDTO = transactionService.shortStatement(id);
         return ResponseEntity.ok(shortStatementDTO);
@@ -122,8 +122,8 @@ public class AccountController {
 
 
 
-    @GetMapping("/CheckBalance")
-    public ResponseEntity<?> checkBalance(@RequestParam long accountNo){
+    @GetMapping("/CheckBalance/{id}")
+    public ResponseEntity<?> checkBalance(@PathVariable("AccountNo") long accountNo){
         return ResponseEntity.ok(accountService.checkBalance(accountNo));
     }
 
@@ -151,16 +151,18 @@ public class AccountController {
     }
 
 
-    @DeleteMapping("/account/{id}")
-    public ResponseEntity<?> DeleteAccount(@PathVariable("id") long accountNo)
+//    @DeleteMapping("/account/{id}")
+//    public ResponseEntity<?> DeleteAccount(@PathVariable("id") long accountNo)
+//    {
+//        return ResponseEntity.ok(accountService.deleteAccountCustomer(accountNo));
+//    }
+
+    @GetMapping("/transaction")
+    public ResponseEntity<?> listTransactions()
     {
-        return ResponseEntity.ok(accountService.deleteAccountCustomer(accountNo));
+        return ResponseEntity.ok(transactionService.listAllTransactions());
     }
 
-//    @GetMapping("/test/{id}")
-//    public ResponseEntity<?> test (@PathVariable("id") int id)
-//    {
-//        return ResponseEntity.ok(historyRepository.findByRrn(id));
-//    }
+
 
 }
