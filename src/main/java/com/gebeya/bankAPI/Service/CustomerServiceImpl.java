@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.Spliterator;
 
 
 @Service
@@ -38,7 +39,11 @@ public class CustomerServiceImpl implements CustomerService{
 
     @Override
     public Iterable<Customer> getAllCustomer(){
-        return customerRepository.findAll();
+        Iterable<Customer> customer = customerRepository.findAll();
+        Spliterator<Customer> customerSpliterator = customer.spliterator();
+        if(!customerSpliterator.tryAdvance(cust -> {}))
+            throw new ErrorMessage(HttpStatus.NOT_FOUND,"customers could not be found");
+        return customer;
     }
 
     @Override

@@ -68,7 +68,6 @@ public class AccountServiceImpl implements AccountService{
         Optional<Account> optionalAccount = accountRepository.findById(accountId);
         if (optionalAccount.isEmpty())
             throw new ErrorMessage(HttpStatus.NOT_FOUND,"Account not found");
-
             Account existingAccount = optionalAccount.get();
             existingAccount.setBalance(account.getBalance());
             existingAccount.setAccountStatus(account.getAccountStatus());
@@ -273,7 +272,7 @@ public class AccountServiceImpl implements AccountService{
                 if(existingAccount.isEmpty())
                 {
                     historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
-                    throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer PhoneNumber could not be found");
+                    throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer Mobile could not be found");
                 }
 
                 Optional<Transaction> DCustomer = transactionRepository.findByOTPAndMobileNo(request.getOtp(),request.getMobileNo());
@@ -361,6 +360,9 @@ public class AccountServiceImpl implements AccountService{
                 //update the MCustomer History
                 //TO-DO
             }
+            else {
+                throw new ErrorMessage(HttpStatus.BAD_REQUEST,"unknown error");
+            }
 
         }
 
@@ -424,7 +426,7 @@ public class AccountServiceImpl implements AccountService{
             CustomerProfileByAccountDTO McustomerProfileByAccountDTO = customerProfileExtractor(request.getMerchantUserAccountNo());
             if(McustomerProfileByAccountDTO.getCustomerProfile()!=CustomerProfile.Merchant)
             {
-                historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Debit,request.getAmount(),ResponseCode.failed));
+                historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getDefaultUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                 throw new ErrorMessage(HttpStatus.BAD_REQUEST,"bad request");
             }
 
@@ -437,7 +439,7 @@ public class AccountServiceImpl implements AccountService{
                 //not common
                 if(existingAccount.isEmpty())
                 {
-                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
+                    historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.NOT_FOUND,"Customer PhoneNumber could not be found");
                 }
 
@@ -445,7 +447,7 @@ public class AccountServiceImpl implements AccountService{
                 Optional<Transaction> DCustomer = transactionRepository.findByOTPAndMobileNo(request.getOtp(),request.getMobileNo());
                 if(DCustomer.isEmpty())
                 {
-                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
+                    historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.NOT_FOUND,"Invalid OTP or MobileNo");
                 }
 
@@ -454,7 +456,7 @@ public class AccountServiceImpl implements AccountService{
 
                 if(DTransaction.getAmount()>DefaultAccount.getBalance())
                 {
-                    historyRepository.save(new History(TransactionCode.Deposit,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
+                    historyRepository.save(new History(TransactionCode.Withdrawal,accountRepository.findById(request.getMerchantUserAccountNo()).get(),SIDE.Credit,request.getAmount(),ResponseCode.failed));
                     throw new ErrorMessage(HttpStatus.BAD_REQUEST,"Insufficient balance");
                 }
 

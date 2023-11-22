@@ -43,6 +43,13 @@ public class AccountController {
         this.profile=profile;
     }
 
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "When an Account created successfully"),
+            @ApiResponse(responseCode = "500", description = "when internal error occurred"),
+
+    })
+
     //it works
     @PostMapping("/account")
 
@@ -53,6 +60,12 @@ public class AccountController {
         return ResponseEntity.ok(accountService.addAccount(account));
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "When an Account and associated customer updated successfully"),
+            @ApiResponse(responseCode = "404", description = "when an account can not be found"),
+            @ApiResponse(responseCode = "500", description = "when internal error occurred"),
+
+    })
 
     @PutMapping("/account")
     public ResponseEntity<?>updateAccount(@RequestParam long accountNo ,@RequestBody Account account){
@@ -104,6 +117,17 @@ public class AccountController {
         return ResponseEntity.ok(accountService.withdrawal(transaction));
     }
 
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "when transfer completed successfully"),
+            @ApiResponse(responseCode = "400", description = "when an account is blocked"),
+            @ApiResponse(responseCode = "400", description = "when the balance is insufficient"),
+            @ApiResponse(responseCode = "400", description = "when an amount is less than or equal to 0"),
+            @ApiResponse(responseCode = "404", description = "when an account could not be found"),
+            @ApiResponse(responseCode = "500", description = "when internal error occurred"),
+
+    })
+
     @PostMapping("/transfer")
     public ResponseEntity<?> transfer(@RequestBody TransferDTO transferDTO){
         ResponseModel responseModel = accountService.transfer(transferDTO);
@@ -111,7 +135,13 @@ public class AccountController {
     }
 
 
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "return body"),
+            @ApiResponse(responseCode = "404", description = "when transaction is empty"),
+            @ApiResponse(responseCode = "404", description = "when an account could not be found"),
+            @ApiResponse(responseCode = "500", description = "when internal error occurred"),
 
+    })
 
     @GetMapping("/ShortStatement/{AccountNo}")
     public ResponseEntity<?> statement(@PathVariable("AccountNo") long id)
@@ -120,12 +150,25 @@ public class AccountController {
         return ResponseEntity.ok(shortStatementDTO);
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "return amount"),
+            @ApiResponse(responseCode = "404", description = "when an account could not be found"),
+            @ApiResponse(responseCode = "500", description = "when internal error occurred"),
 
+    })
 
     @GetMapping("/CheckBalance/{AccountNo}")
     public ResponseEntity<?> checkBalance(@PathVariable("AccountNo") long accountNo){
         return ResponseEntity.ok(accountService.checkBalance(accountNo));
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "when an account saved successfully"),
+            @ApiResponse(responseCode = "400", description = "invalid request"),
+            @ApiResponse(responseCode = "404", description = "when an account could not be found"),
+            @ApiResponse(responseCode = "500", description = "when internal error occurred"),
+
+    })
 
     @PostMapping("/activeMobileBanking")
     public ResponseEntity<?> activateMobileBanking(@RequestBody MobileBankingUsersDTO dto)
@@ -133,10 +176,25 @@ public class AccountController {
         return ResponseEntity.ok(mobileBankingUserService.activeMobileBanking(dto));
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "when language changed successfully"),
+            @ApiResponse(responseCode = "500", description = "when internal error occurred"),
+
+    })
+
     @GetMapping("/changelanguage")
     public ResponseEntity<?> changelanguage(@RequestHeader("Accept-Language") String locale) {
         return ResponseEntity.ok(profile.language(locale));
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "when operation completed successfully"),
+            @ApiResponse(responseCode = "400", description = "when bad request occurred"),
+            @ApiResponse(responseCode = "400", description = "when the balance is insufficient"),
+            @ApiResponse(responseCode = "404", description = "when an account could not be found"),
+            @ApiResponse(responseCode = "500", description = "when internal error occurred"),
+            @ApiResponse(responseCode = "500", description = "when unknown server error occurred"),
+    })
 
     @PostMapping("/topup")
     public ResponseEntity<?> airtime(@RequestBody topUpRequestDTO top){
