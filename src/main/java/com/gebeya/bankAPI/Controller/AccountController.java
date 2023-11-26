@@ -11,13 +11,11 @@ import com.gebeya.bankAPI.Service.TransactionService;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.http.ResponseEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Locale;
 
 @RestController
 @Slf4j
@@ -67,55 +65,11 @@ public class AccountController {
 
     })
 
-    @PutMapping("/account")
-    public ResponseEntity<?>updateAccount(@RequestParam long accountNo ,@RequestBody Account account){
+    @PutMapping("/account/{AccountNo}")
+    public ResponseEntity<?>updateAccount(@PathVariable("AccountNo") long accountNo ,@RequestBody Account account){
         return ResponseEntity.ok(accountService.updateAccountCustomer(accountNo,account));
     }
 
-//        @PostMapping("/account")
-//    public ResponseEntity<Account> postAccount (){
-//            Account senderAccount = accountRepository.findById(10000004L).get();
-//                senderAccount.setBalance(50);
-//
-//        return ResponseEntity.ok(accountRepository.save(senderAccount));
-//    }
-
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "when operation completed successfully"),
-            @ApiResponse(responseCode = "400", description = "when OTP expire"),
-            @ApiResponse(responseCode = "400", description = "when bad request happens"),
-            @ApiResponse(responseCode = "400", description = "when the balance is insufficient"),
-            @ApiResponse(responseCode = "404", description = "when a customer account can not be found"),
-            @ApiResponse(responseCode = "404", description = "when a customer mobile could not be found"),
-            @ApiResponse(responseCode = "404", description = "when invalid otp or mobileNo inserted"),
-            @ApiResponse(responseCode = "404", description = "when invalid otp or accountNo inserted"),
-            @ApiResponse(responseCode = "500", description = "when internal error occurred"),
-
-    })
-    @PostMapping("/deposit")
-    public ResponseEntity<?> deposit(@RequestBody TransactionRequestDTOtemp t){
-        log.info("Account content: {}", t);
-        return ResponseEntity.ok(accountService.deposit(t));
-    }
-
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "when an operation complete successfully"),
-            @ApiResponse(responseCode = "400", description = "when OTP expire"),
-            @ApiResponse(responseCode = "400", description = "when bad request happens"),
-            @ApiResponse(responseCode = "400", description = "when unknown error occurred"),
-            @ApiResponse(responseCode = "400", description = "when the balance is insufficient"),
-            @ApiResponse(responseCode = "404", description = "when a customer account can not be found"),
-            @ApiResponse(responseCode = "404", description = "when a customer mobile could not be found"),
-            @ApiResponse(responseCode = "404", description = "when invalid otp or mobileNo inserted"),
-            @ApiResponse(responseCode = "404", description = "when invalid otp or accountNo inserted"),
-            @ApiResponse(responseCode = "500", description = "when internal error occurred"),
-
-    })
-    @PostMapping("/withdrawal")
-    public ResponseEntity<?> withdrawal(@RequestBody TransactionRequestDTOtemp transaction){
-        log.info("Account content: {}", transaction);
-        return ResponseEntity.ok(accountService.withdrawal(transaction));
-    }
 
 
     @ApiResponses(value = {
@@ -221,6 +175,30 @@ public class AccountController {
         return ResponseEntity.ok(transactionService.listAllTransactions());
     }
 
+
+    @PostMapping("/withdrawalForMerchant")
+    public ResponseEntity<?> WithdrawalForMerchant(MerchantCustomerDTO request)
+    {
+        return ResponseEntity.ok(accountService.withdrawalForMerchantCustomer(request));
+    }
+
+    @PostMapping("/withdrawalForDefault")
+    public ResponseEntity<?> withdrawalForDefault(DefaultCustomerDTO request)
+    {
+        return ResponseEntity.ok(accountService.withdrawalForDefaultCustomer(request));
+    }
+
+    @PostMapping("/depositForMerchant")
+    public ResponseEntity<?> DepositForMerchant (MerchantCustomerDTO request)
+    {
+        return ResponseEntity.ok(accountService.depositForMerchantCustomer(request));
+    }
+
+    @PostMapping("/depositForDefault")
+    public ResponseEntity<?> DepositForDefault (DefaultCustomerDTO request)
+    {
+        return ResponseEntity.ok(accountService.depositForDefaultCustomer(request));
+    }
 
 
 }

@@ -20,6 +20,6 @@ public class WebClientConfig {
     @Bean
     public WebClient webClientForTopUp(WebClient.Builder webClientBuilder)
     {
-        return webClientBuilder.baseUrl("https://meinab.com/mtelecom").build();
+        return webClientBuilder.baseUrl("http://192.168.1.43:9090/mtelecom").build();
     }
 }

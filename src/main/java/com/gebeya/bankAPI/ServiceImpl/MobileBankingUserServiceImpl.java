@@ -1,4 +1,4 @@
-package com.gebeya.bankAPI.Service;
+package com.gebeya.bankAPI.ServiceImpl;
 
 import com.gebeya.bankAPI.Exception.ErrorMessage;
 import com.gebeya.bankAPI.Model.DTO.MobileBankingUsersDTO;
@@ -9,6 +9,7 @@ import com.gebeya.bankAPI.Model.Enums.CustomerProfile;
 import com.gebeya.bankAPI.Repository.AccountRepository;
 import com.gebeya.bankAPI.Repository.CustomerRepository;
 import com.gebeya.bankAPI.Repository.MobileBankingUserRepository;
+import com.gebeya.bankAPI.Service.MobileBankingUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class MobileBankingUserServiceImpl implements MobileBankingUserService{
+public class MobileBankingUserServiceImpl implements MobileBankingUserService {
 
     private AccountRepository accountRepository;
 

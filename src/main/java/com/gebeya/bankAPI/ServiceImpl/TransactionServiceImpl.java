@@ -1,4 +1,4 @@
-package com.gebeya.bankAPI.Service;
+package com.gebeya.bankAPI.ServiceImpl;
 
 import com.gebeya.bankAPI.Exception.ErrorMessage;
 import com.gebeya.bankAPI.Model.DTO.*;
@@ -10,6 +10,8 @@ import com.gebeya.bankAPI.Repository.AccountRepository;
 import com.gebeya.bankAPI.Repository.CustomerRepository;
 import com.gebeya.bankAPI.Repository.HistoryRepository;
 import com.gebeya.bankAPI.Repository.TransactionRepository;
+import com.gebeya.bankAPI.Service.AccountService;
+import com.gebeya.bankAPI.Service.TransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,7 +27,7 @@ import static reactor.core.publisher.Signal.subscribe;
 
 @Service
 @Slf4j
-public class TransactionServiceImpl implements TransactionService{
+public class TransactionServiceImpl implements TransactionService {
 
     TransactionRepository transactionRepository;
     AccountRepository accountRepository;
@@ -49,7 +51,7 @@ public class TransactionServiceImpl implements TransactionService{
     }
 
     @Override
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 120000)
 
     public void autoCheckOTPExpiration()
     {

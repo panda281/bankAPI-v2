@@ -1,12 +1,13 @@
-package com.gebeya.bankAPI.Service;
+package com.gebeya.bankAPI.ServiceImpl;
 
+import com.gebeya.bankAPI.Service.Profile;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
 @Service
-public class ProfileImpl implements Profile{
+public class ProfileImpl implements Profile {
 
     ResourceBundleMessageSource messageSource;
     public ProfileImpl(ResourceBundleMessageSource messageSource)

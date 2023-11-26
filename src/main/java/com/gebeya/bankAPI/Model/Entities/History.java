@@ -52,6 +52,14 @@ public class History {
 
     }
 
+    public History(TransactionCode transactionCode, Account account, SIDE side, ResponseCode responseCode) {
+        this.transactionCode = transactionCode;
+        this.account = account;
+        this.side = side;
+        this.responseCode = responseCode;
+
+    }
+
     //for financial services when their transactions are successful
 
 

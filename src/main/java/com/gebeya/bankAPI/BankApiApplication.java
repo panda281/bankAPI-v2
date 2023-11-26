@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 
-//@EnableScheduling
+@EnableScheduling
 @OpenAPIDefinition(info = @Info(title = "Bank API", version = "2.0", description = "Bank API"))
 public class BankApiApplication {
 

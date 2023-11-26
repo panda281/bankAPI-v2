@@ -11,17 +11,25 @@ public interface AccountService {
 
     public ResponseModel transfer(TransferDTO transferDTO);
 
-    public ResponseModel deposit(TransactionRequestDTOtemp transactionRequestDTO);
+
 
     public CustomerProfileByAccountDTO customerProfileExtractor(long accountNo);
 
-    public  ResponseModel withdrawal (TransactionRequestDTOtemp transactionRequestDTOtemp);
+
 
     public ResponseModel updateAccountCustomer(long accountId, Account account);
 
     public TopUpResponseDTO topUp(topUpRequestDTO topup);
 
     public ResponseModel deleteAccountCustomer(long AccountNo);
+
+    public ResponseModel withdrawalForDefaultCustomer(DefaultCustomerDTO request);
+
+    public ResponseModel withdrawalForMerchantCustomer(MerchantCustomerDTO request);
+
+    public ResponseModel depositForDefaultCustomer (DefaultCustomerDTO request);
+
+    public ResponseModel depositForMerchantCustomer (MerchantCustomerDTO request);
 
 
 

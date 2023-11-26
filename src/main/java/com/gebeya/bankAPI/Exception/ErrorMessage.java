@@ -1,6 +1,9 @@
 package com.gebeya.bankAPI.Exception;
 
-import org.springframework.http.HttpStatusCode;
+
+
+import org.springframework.http.HttpStatus;
+//import org.springframework.http.HttpStatusCode;
 
 import java.util.Date;
 
@@ -8,9 +11,9 @@ public class ErrorMessage extends RuntimeException {
 
     private static final long serialVersionUID = 1;
 
-    private HttpStatusCode status;
+    private HttpStatus status;
     private String message;
-    public ErrorMessage(HttpStatusCode status, String message)
+    public ErrorMessage(HttpStatus status, String message)
     {
         super(message);
         this.status=status;
@@ -18,11 +21,11 @@ public class ErrorMessage extends RuntimeException {
     }
 
 
-    public HttpStatusCode getStatus() {
+    public HttpStatus getStatus() {
         return status;
     }
 
-    public void setStatus(HttpStatusCode status) {
+    public void setStatus(HttpStatus status) {
         this.status = status;
     }
 
