@@ -581,7 +581,7 @@ public class AccountServiceImpl implements AccountService {
     public TopUpResponseDTO topUpfetch(int paramValue)
     {
         TopUpResponseDTO jsonResponse = webClientForTopUp.get()
-                .uri("/topup/"+paramValue)
+                .uri("/topup.php/"+paramValue)
                 .retrieve()
                 .onStatus(status ->status.is4xxClientError(), response->{
                     throw new ErrorMessage(HttpStatus.BAD_REQUEST,"bad request occurred");
